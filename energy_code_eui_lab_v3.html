@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Energy Code + EUI Lab</title>
+<meta name="description" content="Interactive U.S. map for finding local commercial energy codes, climate zones and EUI benchmarking resources.">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#fff; --surface:#fff; --ink:#000; --muted:#666; --line:#e6e6e6; --line-strong:#a0a0a0;
+  --brand:#000; --brand-ink:#fff; --brand-soft:#f3f3f3;
+  --good:#2d7a4b; --bad:#b03030; --warn:#8a6200;
+  --font-head:Aharoni,'Arial Narrow','Helvetica Neue',Arial,sans-serif;
+  --font-body:Aptos,'Segoe UI',system-ui,-apple-system,Helvetica,Arial,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:#fff;color:#000;font:16px/1.6 var(--font-body);-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:var(--font-head);font-weight:400;line-height:1.1;margin:0}
+h1{font-size:clamp(2.6rem,7vw,4.6rem);letter-spacing:-.01em}
+h3{font-size:1.35rem;margin-bottom:6px}
+p{margin:.5em 0}
+b{font-weight:600}
+button,input{font:inherit;color:inherit}
+a{color:#000;text-underline-offset:3px}
+:focus-visible{outline:2px solid #000;outline-offset:3px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+header.top{padding:48px 0 12px}
+header.top p{max-width:67ch;color:var(--muted);font-size:1.05rem}
+.panel{padding:36px 0 80px}
+.grid{display:grid;gap:48px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:980px){.grid{grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);align-items:start}}
+.col{display:grid;gap:38px;min-width:0}
+.card{min-width:0}
+.sub{color:var(--muted)}
+.btn{appearance:none;border:1px solid #000;background:#fff;border-radius:0;padding:8px 16px;cursor:pointer;min-height:40px;text-decoration:none;display:inline-block}
+.btn:hover,.btn:focus-visible{background:#000;color:#fff}
+.site-line{display:flex;gap:6px 20px;flex-wrap:wrap;align-items:baseline;margin-bottom:14px}
+.site-line .big{font-family:var(--font-head);font-size:2rem;line-height:1}
+.plate{margin:0}
+.plate figcaption{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:8px;padding-top:8px;font-size:.85rem;color:var(--muted)}
+svg{display:block;width:100%;height:auto}
+svg text{font-family:var(--font-body)}
+.map-wrap{position:relative}
+.tooltip{position:absolute;pointer-events:none;background:#fff;border:1px solid #000;padding:8px 10px;font-size:.88rem;line-height:1.35;display:none;z-index:10;max-width:260px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
+.stat .k{font-size:.8rem;color:var(--muted)}
+.stat .v{font-family:var(--font-head);font-size:1.55rem;line-height:1.1}
+.section{border-top:1px solid var(--line);padding:16px 0}
+.section:first-child{border-top:0;padding-top:0}
+.step{display:grid;grid-template-columns:32px 1fr;gap:10px;border-top:1px solid var(--line);padding:12px 0}
+.step:first-of-type{border-top:0}
+.step .n{font-family:var(--font-head);font-size:1.35rem}
+.linkrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.notice{border-left:2px solid var(--warn);padding-left:12px;margin-top:14px}
+.compare{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end}
+input[type=number]{width:100%;border:0;border-bottom:1px solid #000;border-radius:0;padding:8px 2px;min-height:40px;background:#fff}
+.result{margin-top:10px;font-weight:600}
+.location-switch{border-top:1px solid var(--line);padding-top:12px;margin-top:16px}
+.location-switch .k{font-size:.8rem;color:var(--muted);margin-bottom:5px}
+.location-switch .links{display:flex;flex-wrap:wrap;gap:2px 18px}
+.location-switch button{appearance:none;border:0;border-bottom:2px solid transparent;background:transparent;padding:2px 0;cursor:pointer;color:var(--muted)}
+.location-switch button:hover{color:#000}
+.location-switch button[aria-pressed="true"]{color:#000;border-bottom-color:#000}
+.baseline-box{border-left:3px solid #000;padding-left:12px;margin-top:12px}
+.baseline-box .big{font-family:var(--font-head);font-size:1.65rem;line-height:1.1}
+.small{font-size:.9rem}
+footer{padding:24px 0 48px;color:var(--muted);font-size:.85rem}
+@media(max-width:560px){.stats{grid-template-columns:1fr}.compare{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>Energy Code + EUI Lab</h1>
+    <p>Hover over a project location to find its commercial energy code, climate zone, official code links and the best way to establish an EUI baseline.</p>
+  </div>
+</header>
+
+<main class="wrap">
+<section class="panel">
+  <div class="grid">
+    <div class="col">
+      <div class="card">
+        <figure class="plate">
+          <div class="map-wrap">
+            <div id="map"></div>
+            <div class="tooltip" id="tip"></div>
+          </div>
+          <figcaption><span><b>U.S. energy-code locations</b></span><span>Hover to explore · click to hold</span></figcaption>
+        </figure>
+      </div>
+
+      <div class="card">
+        <h3>How to use this page</h3>
+        <div class="step"><div class="n">1</div><div><b>Hover over the project city.</b><br><span class="sub">The code and baseline information updates automatically.</span></div></div>
+        <div class="step"><div class="n">2</div><div><b>Open the official code source.</b><br><span class="sub">Confirm the code edition and local amendments before making a compliance claim.</span></div></div>
+        <div class="step"><div class="n">3</div><div><b>Identify the EUI reference.</b><br><span class="sub">Use a national building-type median for a simple benchmark, or local disclosure data when a city publishes comparable buildings.</span></div></div>
+        <div class="step"><div class="n">4</div><div><b>Keep code and EUI separate.</b><br><span class="sub">A lower EUI is better performance, but it does not automatically prove energy-code compliance.</span></div></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card" id="detail"></div>
+
+      <div class="card">
+        <h3>Compare your Insight EUI</h3>
+        <p class="sub">For College/University projects, ENERGY STAR reports a U.S. median site EUI of 84.3 kBtu/ft²·yr. This is a national performance reference, not a city code limit.</p>
+        <div class="compare">
+          <label>Your model EUI<input id="eui" type="number" min="0" step="0.1" placeholder="e.g. 87"></label>
+          <button class="btn" id="check">Compare</button>
+        </div>
+        <div class="result" id="result"></div>
+        <div class="notice">For code compliance, use the jurisdiction's required prescriptive or performance path. If the performance path uses ASHRAE 90.1 Appendix G or an IECC performance method, the code baseline is a modeled reference building, not one universal EUI value.</div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer><div class="wrap">Code status checked October 2026. Verify the official jurisdiction source before permitting or final compliance documentation.</div></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<script>
+(function(){
+'use strict';
+
+const BENCH=84.3;
+const C={
+  atlanta:{
+    name:'Atlanta',state:'Georgia',lat:33.749,lon:-84.388,zone:'3A',climate:'Warm humid',
+    code:'2015 IECC with Georgia Supplements and Amendments',
+    path:'Georgia uses the 2015 IECC with Georgia supplements and amendments. For commercial compliance, Georgia permits the IECC pathway or COMcheck; the state amendments direct COMcheck users to IECC 2015 or ASHRAE/IES 90.1-2013.',
+    note:'The 2015 IECC remains Georgia’s current state minimum energy code in 2026.',
+    official:'https://dca.georgia.gov/community-assistance/construction-codes/current-state-minimum-codes-construction',
+    officialLabel:'Georgia current energy code',
+    comp:'https://www.energycodes.gov/comcheck',compLabel:'COMcheck',
+    baseline:'For a simple College/University benchmark, use the ENERGY STAR national median: 84.3 kBtu/ft²·yr site EUI. For a more local existing-building comparison, use Atlanta’s commercial building benchmarking resources and compare Site EUI values for similar properties.',
+    baselineLink:'https://www.atlantaga.gov/government/mayor-s-office/executive-offices/office-of-sustainability-and-resilience',
+    baselineLabel:'Atlanta benchmarking resources',
+    localNote:'Atlanta requires energy benchmarking for covered commercial buildings. The city’s sustainability page links to its Energy Benchmarking Map and ordinance reporting resources.'
+  },
+  boston:{
+    name:'Boston',state:'Massachusetts',lat:42.3601,lon:-71.0589,zone:'5A',climate:'Cool humid',
+    code:'Massachusetts Specialized Energy Code',
+    path:'Boston has adopted the Specialized Energy Code. Commercial projects use 225 CMR 23.00 plus the Specialized Code commercial appendix and Massachusetts amendments.',
+    note:'Massachusetts commercial Stretch/Specialized provisions are based on IECC 2021 with Massachusetts amendments; the commercial code also references ASHRAE 90.1-2019.',
+    official:'https://www.mass.gov/info-details/massachusetts-building-energy-codes',
+    officialLabel:'Massachusetts energy codes',
+    comp:'https://www.mass.gov/info-details/massachusetts-building-energy-code-adoption-by-municipality',compLabel:'Municipality adoption map',
+    baseline:'For a simple College/University benchmark, use 84.3 kBtu/ft²·yr site EUI. For a Boston-specific comparison, open BERDO Data Disclosure and compare reported Site EUI values for similar institutional or educational buildings.',
+    baselineLink:'https://www.boston.gov/departments/environment/berdo',
+    baselineLabel:'Boston BERDO data + live map',
+    localNote:'BERDO uses ENERGY STAR Portfolio Manager for annual energy reporting. BERDO compliance itself is based on greenhouse-gas emissions standards, so do not treat a Site EUI value as the BERDO compliance limit.'
+  },
+  phoenix:{
+    name:'Phoenix',state:'Arizona',lat:33.4484,lon:-112.074,zone:'2B',climate:'Hot dry',
+    code:'2024 Phoenix Building Construction Code · 2024 IECC',
+    path:'Phoenix adopted the 2024 IECC as part of the 2024 Phoenix Building Construction Code, with local amendments. The updated code became effective August 1, 2025.',
+    note:'Use the Phoenix-adopted 2024 IECC and local amendments for the project’s energy-code requirements.',
+    official:'https://www.phoenix.gov/administration/departments/pdd/tools-resources/codes-ordinance/building-code.html',
+    officialLabel:'Phoenix building codes',
+    comp:'https://www.energycodes.gov/comcheck',compLabel:'COMcheck',
+    baseline:'For a simple College/University benchmark, use 84.3 kBtu/ft²·yr site EUI. Phoenix’s energy code does not give one universal EUI target. If your assignment asks for a code-performance baseline, create the reference building required by the selected IECC/ASHRAE performance path instead of looking for one city EUI number.',
+    baselineLink:'https://www.energystar.gov/buildings/benchmark/understand-metrics/what-eui',
+    baselineLabel:'ENERGY STAR EUI medians',
+    localNote:'For a climate-specific modeling reference, you can also use DOE prototype building models for the appropriate hot-dry climate zone, or actual campus utility data when available.'
+  },
+  portland:{
+    name:'Portland',state:'Oregon',lat:45.5152,lon:-122.6784,zone:'4C',climate:'Mixed marine',
+    code:'2025 Oregon Energy Efficiency Specialty Code',
+    path:'Commercial projects follow the 2025 Oregon Energy Efficiency Specialty Code. Oregon states that the 2025 OEESC is based on ASHRAE Standard 90.1-2022.',
+    note:'The 2025 OEESC became mandatory July 1, 2025. Portland uses the statewide commercial energy code.',
+    official:'https://www.oregon.gov/bcd/codes-stand/Pages/oeesc-adoption.aspx',
+    officialLabel:'Oregon commercial energy code',
+    comp:'https://www.portland.gov/code/24/10/040',compLabel:'Portland adopted codes',
+    baseline:'For a simple College/University benchmark, use 84.3 kBtu/ft²·yr site EUI. For a Portland-specific baseline, use the Commercial Building Energy Performance Map or annual data and compare Site EUI values for buildings with a similar use and scale.',
+    baselineLink:'https://www.portland.gov/bps/climate-action/energy-reporting/commercial-building-energy-performance-map',
+    baselineLabel:'Portland EUI performance map',
+    localNote:'Portland’s reporting program publishes Site EUI, Source EUI and weather-normalized EUI for covered commercial buildings, making it useful for a local peer comparison.'
+  }
+};
+
+const order=['atlanta','boston','phoenix','portland'];
+let active='atlanta';
+let pinned=false;
+
+function locationSwitch(){
+  return `<div class="location-switch"><div class="k">Other locations</div><div class="links">${order.map(k=>`<button data-city="${k}" aria-pressed="${k===active}">${C[k].name}</button>`).join('')}</div></div>`;
+}
+
+function renderDetail(){
+  const c=C[active];
+  document.getElementById('detail').innerHTML=`
+    ${locationSwitch()}
+    <div class="site-line"><span class="big">${c.name}</span><span class="sub">${c.state}</span></div>
+    <div class="stats">
+      <div class="stat"><div class="k">IECC climate zone</div><div class="v">${c.zone}</div></div>
+      <div class="stat"><div class="k">Climate</div><div class="v" style="font-size:1.2rem">${c.climate}</div></div>
+      <div class="stat"><div class="k">College median site EUI</div><div class="v">${BENCH}</div></div>
+    </div>
+
+    <div class="section" style="margin-top:22px">
+      <h3>Current commercial energy code</h3>
+      <p><b>${c.code}</b></p>
+      <p>${c.path}</p>
+      <p class="sub">${c.note}</p>
+      <div class="linkrow">
+        <a class="btn" target="_blank" rel="noopener" href="${c.official}">${c.officialLabel}</a>
+        <a class="btn" target="_blank" rel="noopener" href="${c.comp}">${c.compLabel}</a>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>EUI baseline: what should I use?</h3>
+      <div class="baseline-box">
+        <div class="big">84.3 kBtu/ft²·yr</div>
+        <div class="small sub">ENERGY STAR U.S. median Site EUI · College/University</div>
+      </div>
+      <p>${c.baseline}</p>
+      <p class="sub">${c.localNote}</p>
+      <div class="linkrow">
+        <a class="btn" target="_blank" rel="noopener" href="${c.baselineLink}">${c.baselineLabel}</a>
+        <a class="btn" target="_blank" rel="noopener" href="https://www.energystar.gov/buildings/benchmark/understand-metrics/what-eui">ENERGY STAR median table</a>
+      </div>
+      <div class="notice"><b>Two different baselines:</b> use EUI to benchmark performance. Use the code-required reference building or prescriptive requirements to demonstrate code compliance.</div>
+    </div>
+
+    </div>`;
+
+  document.querySelectorAll('[data-city]').forEach(b=>{
+    b.addEventListener('click',()=>{active=b.dataset.city;pinned=true;renderDetail();mark();});
+  });
+}
+
+function setActive(k,hold){
+  active=k;
+  if(hold!==undefined)pinned=hold;
+  renderDetail();
+  mark();
+}
+
+renderDetail();
+
+document.getElementById('check').addEventListener('click',()=>{
+  const v=parseFloat(document.getElementById('eui').value),o=document.getElementById('result');
+  if(!Number.isFinite(v)){o.textContent='Enter an EUI first.';return;}
+  const d=v-BENCH;
+  o.textContent=Math.abs(d)<.05
+    ? 'Your model is essentially equal to the U.S. College/University median.'
+    : d<0
+      ? `${Math.abs(d).toFixed(1)} kBtu/ft²·yr below the U.S. College/University median.`
+      : `${d.toFixed(1)} kBtu/ft²·yr above the U.S. College/University median.`;
+});
+
+const W=760,H=470;
+const svg=d3.select('#map').append('svg').attr('viewBox',`0 0 ${W} ${H}`).attr('role','img').attr('aria-label','U.S. map with Atlanta, Boston, Phoenix and Portland');
+const tip=document.getElementById('tip');
+let pointGroups=null;
+
+function mark(){
+  if(!pointGroups)return;
+  pointGroups.select('.outer').attr('fill',d=>d===active?'#000':'#fff');
+  pointGroups.select('.inner').attr('fill',d=>d===active?'#fff':'#000');
+  pointGroups.select('text').attr('font-weight',d=>d===active?700:600);
+}
+window.mark=mark;
+
+d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(us=>{
+  const states=topojson.feature(us,us.objects.states);
+  const proj=d3.geoAlbersUsa().fitExtent([[20,20],[W-20,H-20]],states);
+  const path=d3.geoPath(proj);
+
+  svg.append('g').selectAll('path').data(states.features).join('path')
+    .attr('d',path).attr('fill','#f7f7f7').attr('stroke','#a0a0a0').attr('stroke-width',.7);
+
+  pointGroups=svg.append('g').selectAll('g').data(order).join('g')
+    .attr('tabindex',0).attr('role','button')
+    .attr('aria-label',d=>`${C[d].name}, ${C[d].state}`)
+    .attr('transform',d=>{const p=proj([C[d].lon,C[d].lat]);return `translate(${p[0]},${p[1]})`;})
+    .style('cursor','pointer')
+    .on('mouseenter',(e,d)=>{
+      if(!pinned)setActive(d,false);
+      const c=C[d];
+      tip.innerHTML=`<b>${c.name}</b><br>${c.zone} · ${c.climate}<br>${c.code}`;
+      tip.style.display='block';
+    })
+    .on('mousemove',e=>{
+      const r=document.querySelector('.map-wrap').getBoundingClientRect();
+      tip.style.left=(e.clientX-r.left+12)+'px';
+      tip.style.top=(e.clientY-r.top+12)+'px';
+    })
+    .on('mouseleave',()=>{tip.style.display='none';})
+    .on('click',(e,d)=>{setActive(d,true);})
+    .on('keydown',(e,d)=>{
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();setActive(d,true);}
+      if(e.key==='Escape'){pinned=false;}
+    });
+
+  pointGroups.append('circle').attr('class','outer').attr('r',8).attr('fill','#fff').attr('stroke','#000').attr('stroke-width',2);
+  pointGroups.append('circle').attr('class','inner').attr('r',2.8).attr('fill','#000');
+  pointGroups.append('text').attr('x',11).attr('y',4).attr('font-size',12).attr('font-weight',600).attr('fill','#000').text(d=>C[d].name);
+  mark();
+}).catch(()=>{
+  document.getElementById('map').innerHTML='<p class="sub">The U.S. map requires an internet connection. Use the location links in the information panel.</p>';
+});
+
+})();
+</script>
+</body>
+</html>
